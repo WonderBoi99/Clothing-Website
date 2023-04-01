@@ -63,10 +63,16 @@ def customer_only(f):
 
 
 # Table called 'placed_in' for the many-to-many relationship from item to order
-association_table = db.Table('placed_in',
-                             db.Column('item_id', db.ForeignKey('item.id'), primary_key=True),
-                             db.Column('order_num', db.ForeignKey('order.order_num'), primary_key=True)
-                             )
+# association_table = db.Table('placed_in',
+#                              db.Column('item_id', db.ForeignKey('item.id'), primary_key=True),
+#                              db.Column('order_num', db.ForeignKey('order.order_num'), primary_key=True)
+#                              )
+
+
+class PlacedIn(db.Model):
+    __tablename__ = "placed_in"  # Table name
+    item_id = db.Column(db.Integer, db.ForiegnKey('item.id'), primary_key=True)
+    order_num = db.Column(db.Integer, db.ForeignKey('order.order_num'), primary_key=True)
 
 
 # User Database Table
@@ -347,6 +353,9 @@ def sign_up():
             cvv=sign_up_form.cvv.data,
             user_id=new_user.id
         )
+        new_order = Order(
+            user_id=new_user.id
+        )
         # Add new_billing to the database
         db.session.add(new_billing)
         # Commit changes
@@ -618,12 +627,14 @@ def customer_add_item(item_id):
             # Query for the matching item to be added
             matching_item = Item.query.get(name=item_name)
             # Add a new record to the "placed_in" table using the primary keys of the order and item found
-            # item_order_combo = Item.query.join(association_table).join(Order).\
-            #     filter((association_table.c.item_id == matching_item.id) &
-            #            (association_table.c.order_num == matching_order.order_num)).all()
-
-            statement = association_table.insert().values(item_id=matching_item.id, user_id=matching_order.id)
-            db.session.execute(statement)
+            item_order_combo_to_add = PlacedIn(item_id=matching_item.id, order_num=matching_order.order_num)
+            db.session.add(item_order_combo_to_add)
+            # # item_order_combo = Item.query.join(association_table).join(Order).\
+            # #     filter((association_table.c.item_id == matching_item.id) &
+            # #            (association_table.c.order_num == matching_order.order_num)).all()
+            #
+            # statement = association_table.insert().values(item_id=matching_item.id, user_id=matching_order.id)
+            # db.session.execute(statement)
             db.session.commit()
             # new_item_order_combo = association_table(item_id=matching_item.id, order_num=matching_order.order_num)
             # db.session.add(new_item_order_combo)
@@ -632,8 +643,9 @@ def customer_add_item(item_id):
 
             # Create variable for total price of the items in the order
             total_price = 0
-            all_item_order_combos = Item.query.join(association_table).join(Order).\
-                filter((association_table.c.order_num == matching_order.order_num)).all()
+            all_item_order_combos = PlacedIn.query.filter_by(order_num=current_user.id)
+            # all_item_order_combos = Item.query.join(association_table).join(Order).\
+            #     filter((association_table.c.order_num == matching_order.order_num)).all()
             # For each item-order combo in the records of the "placed_in" that are in the order...
             for item_order in all_item_order_combos:
                 # Query for the item, grab it's price, and add it to the total price
@@ -673,9 +685,9 @@ def customer_add_item(item_id):
             #     filter((association_table.c.item_id == matching_item.id) &
             #            (association_table.c.order_num == matching_order.order_num)).all()
 
-            statement = association_table.insert().values(item_id=matching_item.id, user_id=new_order.id)
-            db.session.execute(statement)
-            db.session.commit()
+            # statement = association_table.insert().values(item_id=matching_item.id, user_id=new_order.id)
+            # db.session.execute(statement)
+            # db.session.commit()
             # Create variable for total price of the items in the order
             total_price = 0
             all_item_order_combos = Item.query.join(association_table).join(Order). \
